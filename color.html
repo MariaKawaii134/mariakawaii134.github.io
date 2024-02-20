@@ -1,0 +1,54 @@
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luz de fondo</title>
+    
+</head>
+<body>
+<div class="caja">
+    <label id="label">Press space to hide</label>
+	 <div class="slider-container">
+        <input type="range" min="0" max="255" value="255" class="slider" id="red-slider">
+    </div>
+
+    <div class="slider-container">
+        <input type="range" min="0" max="255" value="255" class="slider" id="green-slider">
+    </div>
+
+    <div class="slider-container">
+        <input type="range" min="0" max="255" value="255" class="slider" id="blue-slider">
+    </div>
+
+    <button class="update-button" id="update-button">Actualizar</button>
+</div>
+    <script>
+        const redSlider = document.getElementById('red-slider');
+        const greenSlider = document.getElementById('green-slider');
+        const blueSlider = document.getElementById('blue-slider');
+        const updateButton = document.getElementById('update-button');
+
+        // Asociar la función updateBackgroundColor al evento click del botón
+        updateButton.addEventListener('click', updateBackgroundColor);
+
+        function updateBackgroundColor() {
+            const redValue = redSlider.value;
+            const greenValue = greenSlider.value;
+            const blueValue = blueSlider.value;
+
+            document.body.style.backgroundColor = `rgb(${redValue}, ${greenValue}, ${blueValue})`;
+				document.getElementById("label").style.color = `rgb(${255-redValue}, ${255-greenValue}, ${255-blueValue})`;
+        }
+    document.body.onkeyup = function(e){
+        if(e.keyCode == 32){ // Código de tecla para la barra espaciadora
+            var caja = document.querySelector('.caja');
+            if(caja.style.display === 'none'){
+                caja.style.display = 'block';
+            } else {
+                caja.style.display = 'none';
+            }
+        }
+    }
+</script>
+</body>
+</html>
