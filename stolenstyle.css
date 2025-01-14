@@ -43,16 +43,13 @@
     
             /*Avatar row*/
     
-    .ratings-container {
-      display:none !important;
-    }
-    
     .avatar-and-ratings-row {
         background-repeat: no-repeat !important;
         background-position: center 14%;
     }
     
     .avatar-container .Player-username {
+        font-size: 3em;
         animation:rainbowTextAvatar 2s infinite;
     }
     @keyframes rainbowTextAvatar{
