@@ -52,6 +52,14 @@
         font-size: 3em;
         animation:rainbowTextAvatar 2s infinite;
     }
+    
+    .avatar-container .Player-rank {
+        font-size: 2em;
+    }
+
+    .avatar-container .username {
+        max-width: none !important;
+    }
     @keyframes rainbowTextAvatar{
         0%   {  color: gold; }
     /*    17%  {  color: #FF7F00; } */
