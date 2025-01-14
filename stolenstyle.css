@@ -1,4 +1,4 @@
-/*NOTE: I did not do this. I stole it from https://brentmobbs.github.io/bdmxogo.github.io/ogs_css.css and removed the font I disliked. I don't even know how to do CSS*/
+/*NOTE: I did not do this. I stole it from https://brentmobbs.github.io/bdmxogo.github.io/ogs_css.css and removed the things I disliked. I'm learning how to do CSS*/
 
 
 /*Pagewide stuff*/
@@ -48,17 +48,11 @@
     }
     
     .avatar-and-ratings-row {
-        background-image: url('https://brentmobbs.github.io/bdmxogo.github.io/daggers.webp') !important;
         background-repeat: no-repeat !important;
         background-position: center 14%;
     }
     
     .avatar-container .Player-username {
-        font-size: 2em;
-        font-family: "Garamond", Garamond, serif;
-        font-weight: bold;
-        font-variant: small-caps !important;
-        font-style: italic;
         animation:rainbowTextAvatar 2s infinite;
     }
     @keyframes rainbowTextAvatar{
@@ -73,9 +67,6 @@
     
             /*Graphs row*/
     
-    .chart {
-        font-family: "Courier New", "Lucida Console", monospace;
-    }
     
     .strong-wins { 
       fill: deepskyblue !important;
@@ -123,18 +114,6 @@
         100% {  opacity: 0; }
     }
     */
-    
-            /*Activity card*/
-    
-    .activity-card {
-        text-align: left !important;
-    }
-    
-            /*Active games*/
-    
-    .current-users-move {
-        background-image: url('https://brentmobbs.github.io/bdmxogo.github.io/stars2.png') !important;
-    }
     
             /*Game records*/
     
