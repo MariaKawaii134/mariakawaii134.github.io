@@ -1,0 +1,13 @@
+2 players, one plays Xs and Os
+Play in a square grid of any size
+
+There are 2 ways to win:
+- Main way: Forming the winning patterns(XXOX or OOXO). You can form them in any direction, including diagonally.
+- Secondary way: When the board fills up, have the smaller biggest group of connected symbols.
+Start with an empty grid. Starting with Xs, put your symbol on an empty space of the grid.
+If you form no winning patterns in any direction, the opponent goes next.
+If you form more XXOX patterns, Xs wins.
+If you form more OOXO patterns, Os wins.
+If you form the same amount of both patterns, whoever played the last symbol loses.
+
+If the entire board fills up, whoever owns the biggest orthogonally connected group of the same symbol loses. In case both players' biggest groups are the same size, the player who went second(Os) wins.
