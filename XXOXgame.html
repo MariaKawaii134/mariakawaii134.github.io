@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>X's Turn</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: #222;
+      color: #fff;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      margin: 1rem 0 0.5rem;
+      font-size: 1.5rem;
+      transition: color 0.3s ease;
+    }
+
+    .grid {
+      display: grid;
+      gap: 2px;
+    }
+
+    .cell {
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: #000;
+      user-select: none;
+      touch-action: manipulation;
+      transition: background 0.3s, border 0.3s;
+    }
+
+    .cell.X { color: #d22; }
+    .cell.O { color: #26c; }
+    .highlight {
+      background: yellow;
+      border: 2px solid #ff0;
+    }
+
+    .controls {
+      margin-top: 1rem;
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    select, button {
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 0.5rem;
+      background: #444;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    select:hover, button:hover {
+      background: #666;
+    }
+  </style>
+</head>
+<body>
+  <h1 id="turnDisplay">X's Turn</h1>
+  <div id="grid" class="grid"></div>
+  <div class="controls">
+    <select id="sizeSelect">
+      <option disabled selected>New game</option>
+      <option value="5x7">5x7</option>
+      <option value="5x9">5x9</option>
+      <option value="7x7">7x7</option>
+      <option value="7x9">7x9</option>
+      <option value="9x9">9x9</option>
+    </select>
+    <button onclick="undoMove()">Undo</button>
+  </div>
+
+  <script>
+    const grid = document.getElementById("grid");
+    const turnDisplay = document.getElementById("turnDisplay");
+    const sizeSelect = document.getElementById("sizeSelect");
+
+    let originalWidth = 9, originalHeight = 9;
+    let adjustedWidth = 9, adjustedHeight = 9;
+    let currentPlayer = "X";
+    let moveHistory = [];
+    let gameOver = false;
+    let lastWinCells = [];
+
+    function updateTurnDisplay(text, color) {
+      if (text) {
+        turnDisplay.textContent = text;
+        document.title = text;
+        turnDisplay.style.color = color;
+      } else {
+        turnDisplay.textContent = `${currentPlayer}'s Turn`;
+        document.title = `${currentPlayer}'s Turn`;
+        turnDisplay.style.color = currentPlayer === "X" ? "#d22" : "#26c";
+      }
+    }
+
+    function applyOrientationLogic(w, h) {
+      const isPortrait = window.innerHeight > window.innerWidth;
+      const shouldFlip = (isPortrait && w > h) || (!isPortrait && h > w);
+      return shouldFlip ? { width: h, height: w } : { width: w, height: h };
+    }
+
+    function getCell(x, y) {
+      if (x < 0 || y < 0 || x >= adjustedWidth || y >= adjustedHeight) return null;
+      const index = y * adjustedWidth + x;
+      return grid.children[index];
+    }
+
+    const directions = [
+      [1, 0], [0, 1], [1, 1], [1, -1],
+      [-1, 0], [0, -1], [-1, -1], [-1, 1]
+    ];
+
+    function countPatternsAndPositions() {
+      let xCount = 0, oCount = 0;
+      let xPositions = [], oPositions = [];
+
+      for (let y = 0; y < adjustedHeight; y++) {
+        for (let x = 0; x < adjustedWidth; x++) {
+          for (const [dx, dy] of directions) {
+            const a = getCell(x, y);
+            const b = getCell(x + dx, y + dy);
+            const c = getCell(x + 2 * dx, y + 2 * dy);
+            const d = getCell(x + 3 * dx, y + 3 * dy);
+
+            if (!a || !b || !c || !d) continue;
+            const str = a.textContent + b.textContent + c.textContent + d.textContent;
+
+            if (str === "XXOX") {
+              xCount++;
+              xPositions.push(a, b, c, d);
+            }
+            if (str === "OOXO") {
+              oCount++;
+              oPositions.push(a, b, c, d);
+            }
+          }
+        }
+      }
+
+      return { xCount, oCount, xPositions, oPositions };
+    }
+
+    function floodFill(symbol) {
+      const visited = new Set();
+      let maxGroup = [];
+
+      for (let y = 0; y < adjustedHeight; y++) {
+        for (let x = 0; x < adjustedWidth; x++) {
+          const cell = getCell(x, y);
+          if (!cell || cell.textContent !== symbol || visited.has(`${x},${y}`)) continue;
+
+          const queue = [[x, y]];
+          const group = [];
+          visited.add(`${x},${y}`);
+
+          while (queue.length) {
+            const [cx, cy] = queue.shift();
+            const c = getCell(cx, cy);
+            if (!c) continue;
+            group.push(c);
+
+            for (const [dx, dy] of [[1,0], [-1,0], [0,1], [0,-1]]) {
+              const nx = cx + dx, ny = cy + dy;
+              const n = getCell(nx, ny);
+              const key = `${nx},${ny}`;
+              if (n && n.textContent === symbol && !visited.has(key)) {
+                visited.add(key);
+                queue.push([nx, ny]);
+              }
+            }
+          }
+
+          if (group.length > maxGroup.length) {
+            maxGroup = group;
+          }
+        }
+      }
+      return maxGroup;
+    }
+
+    function checkSecondaryWin() {
+      const allFilled = [...grid.children].every(cell => cell.textContent !== "");
+      if (!allFilled) return;
+
+      const xGroup = floodFill("X");
+      const oGroup = floodFill("O");
+
+      let winner;
+      if (xGroup.length < oGroup.length) {
+        winner = "X";
+        highlightWinningCells(xGroup);
+      } else if (oGroup.length < xGroup.length) {
+        winner = "O";
+        highlightWinningCells(oGroup);
+      } else {
+        winner = "O";
+        highlightWinningCells(oGroup);
+      }
+
+      gameOver = true;
+      updateTurnDisplay(`${winner} won!`, winner === "X" ? "#d22" : "#26c");
+    }
+
+    function highlightWinningCells(cells) {
+      lastWinCells = cells;
+      cells.forEach(cell => cell.classList.add("highlight"));
+    }
+
+    function clearHighlights() {
+      lastWinCells.forEach(cell => cell.classList.remove("highlight"));
+      lastWinCells = [];
+    }
+
+    function createGrid(w, h) {
+      const adjusted = applyOrientationLogic(w, h);
+      adjustedWidth = adjusted.width;
+      adjustedHeight = adjusted.height;
+
+      grid.innerHTML = "";
+      moveHistory = [];
+      gameOver = false;
+      clearHighlights();
+
+      const cellSize = Math.floor(
+        Math.min(window.innerWidth * 0.95 / adjustedWidth,
+                 window.innerHeight * 0.65 / adjustedHeight)
+      );
+
+      grid.style.gridTemplateColumns = `repeat(${adjustedWidth}, ${cellSize}px)`;
+      grid.style.gridTemplateRows = `repeat(${adjustedHeight}, ${cellSize}px)`;
+
+      for (let i = 0; i < adjustedWidth * adjustedHeight; i++) {
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        cell.style.width = `${cellSize}px`;
+        cell.style.height = `${cellSize}px`;
+        cell.style.fontSize = `${cellSize * 0.6}px`;
+        cell.dataset.index = i;
+
+        cell.addEventListener("click", () => {
+          if (cell.textContent !== "" || gameOver) return;
+
+          cell.textContent = currentPlayer;
+          cell.classList.add(currentPlayer);
+          moveHistory.push({ index: i, player: currentPlayer });
+          if (moveHistory.length > 5) moveHistory.shift();
+
+          const { xCount, oCount, xPositions, oPositions } = countPatternsAndPositions();
+
+          if (xCount === 0 && oCount === 0) {
+            currentPlayer = currentPlayer === "X" ? "O" : "X";
+            updateTurnDisplay();
+            checkSecondaryWin();
+            return;
+          }
+
+          let winner;
+          let highlightCells;
+
+          if (xCount > oCount) {
+            winner = "X";
+            highlightCells = xPositions;
+          } else if (oCount > xCount) {
+            winner = "O";
+            highlightCells = oPositions;
+          } else {
+            winner = currentPlayer === "X" ? "O" : "X";
+            highlightCells = winner === "X" ? xPositions : oPositions;
+          }
+
+          gameOver = true;
+          updateTurnDisplay(`${winner} won!`, winner === "X" ? "#d22" : "#26c");
+          highlightWinningCells(highlightCells);
+        });
+
+        grid.appendChild(cell);
+      }
+
+      updateTurnDisplay();
+    }
+
+    function undoMove() {
+      if (moveHistory.length === 0) return;
+
+      const lastMove = moveHistory.pop();
+      const cell = grid.children[lastMove.index];
+      cell.textContent = "";
+      cell.classList.remove("X", "O");
+
+      currentPlayer = lastMove.player;
+
+      if (gameOver) {
+        gameOver = false;
+        clearHighlights();
+      }
+      updateTurnDisplay();
+    }
+
+    function parseSize(str) {
+      const [h, w] = str.split("x").map(Number);
+      return { height: h, width: w };
+    }
+
+    sizeSelect.addEventListener("change", () => {
+      const value = sizeSelect.value;
+      const { height, width } = parseSize(value);
+
+      const sameSize = height === originalHeight && width === originalWidth;
+      const hasMoves = moveHistory.length > 0;
+
+      if (!gameOver && hasMoves) {
+        if (sameSize || true) {
+          const confirmReset = confirm("Are you sure? The board will reset.");
+          if (!confirmReset) {
+            sizeSelect.selectedIndex = 0;
+            return;
+          }
+        }
+      }
+
+      originalHeight = height;
+      originalWidth = width;
+      currentPlayer = "X";
+      createGrid(originalWidth, originalHeight);
+      sizeSelect.selectedIndex = 0;
+    });
+
+    createGrid(originalWidth, originalHeight);
+    window.addEventListener("resize", () => {
+      createGrid(originalWidth, originalHeight);
+    });
+  </script>
+</body>
+</html>
